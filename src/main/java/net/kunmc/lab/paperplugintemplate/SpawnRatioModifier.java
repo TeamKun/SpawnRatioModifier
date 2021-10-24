@@ -1,10 +1,15 @@
 package net.kunmc.lab.paperplugintemplate;
 
+import dev.kotx.flylib.FlyLib;
+import dev.kotx.flylib.command.Command;
+import dev.kotx.flylib.command.CommandContext;
+import net.kunmc.lab.paperplugintemplate.command.MainCommand;
 import net.minecraft.server.v1_16_R3.*;
 import org.bukkit.configuration.MemorySection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.craftbukkit.v1_16_R3.CraftServer;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.AbstractMap;
 import java.util.Collection;
@@ -13,15 +18,31 @@ import java.util.stream.Collectors;
 
 public final class SpawnRatioModifier extends JavaPlugin {
     private BiomeBaseRegistryWrapper biomeBaseRegistryWrapper;
+    public static SpawnRatioModifier instance;
 
     @Override
     public void onEnable() {
+        instance = this;
+
         IRegistryCustom.Dimension customRegistry = ((CraftServer) getServer()).getServer().customRegistry;
         IRegistryWritable<BiomeBase> biomeIRegistry = customRegistry.b(IRegistry.ay);
         biomeBaseRegistryWrapper = new BiomeBaseRegistryWrapper(biomeIRegistry);
 
         saveDefaultConfig();
         applyConfig();
+
+        FlyLib.create(this, builder -> {
+            builder.command(new MainCommand("spm"));
+            builder.command(new Command("test") {
+                @Override
+                public void execute(@NotNull CommandContext ctx) {
+                    biomeBaseRegistryWrapper.toList().stream()
+                            .map(BiomeBaseWrapper::mobsSettings)
+                            .map(BiomeSettingsMobsWrapper::getAllSpawnerDataList)
+                            .forEach(System.out::println);
+                }
+            });
+        });
     }
 
     @Override
